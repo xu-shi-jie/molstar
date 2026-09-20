@@ -49,8 +49,18 @@ function bindViewportBackgroundToSkin(plugin: PluginUIContext) {
     if (!root || typeof getComputedStyle === 'undefined') return;
 
     const apply = () => {
-        const parsed = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(root).backgroundColor);
-        if (!parsed) return;
+        // The skin paints `.msp-plugin`, which is not necessarily the element
+        // the app handed over: a host container is often transparent, and
+        // `rgba(0, 0, 0, 0)` read naively is indistinguishable from black.
+        const skinned = root.classList.contains('msp-plugin')
+            ? root
+            : root.querySelector('.msp-plugin');
+        if (!skinned) return;
+
+        const parsed = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/
+            .exec(getComputedStyle(skinned).backgroundColor);
+        if (!parsed || (parsed[4] !== undefined && +parsed[4] === 0)) return;
+
         const backgroundColor = Color.fromRgb(+parsed[1], +parsed[2], +parsed[3]);
         if (plugin.canvas3d?.props.renderer.backgroundColor !== backgroundColor) {
             plugin.canvas3d?.setProps({ renderer: { backgroundColor } });
