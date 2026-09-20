@@ -9,11 +9,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as argparse from 'argparse';
 import { sassPlugin } from 'esbuild-sass-plugin';
+import { writeThemeBundle } from './theme-bundle.mjs';
 import * as os from 'os';
 
 const Apps = [
     // Apps
-    { kind: 'app', name: 'viewer', themes: ['light', 'dark', 'blue'] },
+    { kind: 'app', name: 'viewer', themes: ['light', 'dark', 'blue'], themeBundle: ['light', 'dark'] },
     { kind: 'app', name: 'docking-viewer' },
     { kind: 'app', name: 'mesoscale-explorer' },
     { kind: 'app', name: 'mvs-stories', globalName: 'mvsStories', filename: 'mvs-stories.js' },
@@ -310,6 +311,16 @@ async function main() {
     for (const browserTest of browserTests) promises.push(createBundle(browserTest));
 
     await Promise.all(promises);
+
+    for (const app of apps) {
+        if (!app.themeBundle) continue;
+        const size = writeThemeBundle(
+            `./build/${app.name}/molstar.css`,
+            app.themeBundle.map(name => ({ name, file: `./build/${app.name}/theme/${name}.css` })),
+            name => `:where([data-molstar-theme="${name}"], [data-theme="${name}"])`
+        );
+        console.log(`Theme bundle: build/${app.name}/molstar.css (${app.themeBundle.join(', ')}), ${Math.round(size / 1024)} kB`);
+    }
 
     if (isProduction) {
         console.log('Done.');
