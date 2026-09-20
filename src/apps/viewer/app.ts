@@ -48,6 +48,7 @@ function bindViewportBackgroundToSkin(plugin: PluginUIContext) {
     const root = plugin.layout.root;
     if (!root || typeof getComputedStyle === 'undefined') return;
 
+    /** @returns whether the skin's background was found and applied */
     const apply = () => {
         // The skin paints `.msp-plugin`, which is not necessarily the element
         // the app handed over: a host container is often transparent, and
@@ -55,20 +56,34 @@ function bindViewportBackgroundToSkin(plugin: PluginUIContext) {
         const skinned = root.classList.contains('msp-plugin')
             ? root
             : root.querySelector('.msp-plugin');
-        if (!skinned) return;
+        if (!skinned) return false;
 
         const parsed = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/
             .exec(getComputedStyle(skinned).backgroundColor);
-        if (!parsed || (parsed[4] !== undefined && +parsed[4] === 0)) return;
+        if (!parsed || (parsed[4] !== undefined && +parsed[4] === 0)) return false;
 
         const backgroundColor = Color.fromRgb(+parsed[1], +parsed[2], +parsed[3]);
         if (plugin.canvas3d?.props.renderer.backgroundColor !== backgroundColor) {
             plugin.canvas3d?.setProps({ renderer: { backgroundColor } });
         }
+        return true;
     };
-    apply();
+    if (typeof MutationObserver === 'undefined') {
+        apply();
+        return;
+    }
 
-    if (typeof MutationObserver === 'undefined') return;
+    // The UI is rendered by React after this runs, so `.msp-plugin` is usually
+    // not in the DOM yet and the first read has nothing to read. Wait for it,
+    // then keep following the skin.
+    if (!apply()) {
+        const pending = new MutationObserver(() => {
+            if (!root.isConnected) pending.disconnect();
+            else if (apply()) pending.disconnect();
+        });
+        pending.observe(root, { childList: true, subtree: true });
+    }
+
     const observer = new MutationObserver(() => {
         // The plugin owns no disposal hook that an app-level helper can reach,
         // so the observer retires itself once its root has left the document.
