@@ -50,12 +50,13 @@ function bindViewportBackgroundToSkin(plugin: PluginUIContext) {
 
     /** @returns whether the skin's background was found and applied */
     const apply = () => {
-        // The skin paints `.msp-plugin`, which is not necessarily the element
-        // the app handed over: a host container is often transparent, and
-        // `rgba(0, 0, 0, 0)` read naively is indistinguishable from black.
-        const skinned = root.classList.contains('msp-plugin')
-            ? root
-            : root.querySelector('.msp-plugin');
+        // The skin paints `.msp-plugin`, and the layout root is an element
+        // inside it rather than the element itself, so the lookup goes up.
+        // Reading the root instead gives `rgba(0, 0, 0, 0)`, which taken as a
+        // colour is black -- indistinguishable from a deliberately black
+        // viewport, which is why the alpha is checked below rather than the
+        // result being trusted.
+        const skinned = root.closest('.msp-plugin') ?? root.querySelector('.msp-plugin');
         if (!skinned) return false;
 
         const parsed = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/
@@ -81,7 +82,7 @@ function bindViewportBackgroundToSkin(plugin: PluginUIContext) {
             if (!root.isConnected) pending.disconnect();
             else if (apply()) pending.disconnect();
         });
-        pending.observe(root, { childList: true, subtree: true });
+        pending.observe(root.ownerDocument.body, { childList: true, subtree: true });
     }
 
     const observer = new MutationObserver(() => {
