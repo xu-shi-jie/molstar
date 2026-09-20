@@ -32,6 +32,42 @@ export { consoleStats, isDebugMode, isProductionMode, isTimingMode, setDebugMode
 // TODO: consider removing these in v6.0
 export type { LoadStructureOptions, LoadTrajectoryParams, VolumeIsovalueInfo } from '../../extensions/plugin/loaders';
 
+/**
+ * Keep the 3D viewport's background in step with the skin the UI is drawn in.
+ *
+ * The colour is read from the computed background of the plugin root rather
+ * than configured, so it is whatever `$default-background` the active skin
+ * sets and a page needs to say nothing. `molstar.css` puts no transition on
+ * that property, so the value is final the moment it is read -- a host sheet
+ * that fades its own background would otherwise be sampled mid-fade.
+ *
+ * A skin can be swapped after the viewer exists, and there is no event for it,
+ * so the document element's attributes are watched.
+ */
+function bindViewportBackgroundToSkin(plugin: PluginUIContext) {
+    const root = plugin.layout.root;
+    if (!root || typeof getComputedStyle === 'undefined') return;
+
+    const apply = () => {
+        const parsed = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(root).backgroundColor);
+        if (!parsed) return;
+        const backgroundColor = Color.fromRgb(+parsed[1], +parsed[2], +parsed[3]);
+        if (plugin.canvas3d?.props.renderer.backgroundColor !== backgroundColor) {
+            plugin.canvas3d?.setProps({ renderer: { backgroundColor } });
+        }
+    };
+    apply();
+
+    if (typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver(() => {
+        // The plugin owns no disposal hook that an app-level helper can reach,
+        // so the observer retires itself once its root has left the document.
+        if (!root.isConnected || !plugin.canvas3d) observer.disconnect();
+        else apply();
+    });
+    observer.observe(document.documentElement, { attributes: true });
+}
+
 export class Viewer {
     private _events = new PluginComponent();
     public readonly plugin: PluginUIContext;
@@ -62,8 +98,11 @@ export class Viewer {
         });
 
         plugin.canvas3d?.setProps({ illumination: { enabled: options.illumination ?? DefaultViewerOptions.illumination } });
-        if (options.viewportBackgroundColor ?? DefaultViewerOptions.viewportBackgroundColor) {
-            const backgroundColor = decodeColor(options.viewportBackgroundColor ?? DefaultViewerOptions.viewportBackgroundColor);
+        const viewportBackground = options.viewportBackgroundColor ?? DefaultViewerOptions.viewportBackgroundColor;
+        if (viewportBackground === 'theme') {
+            bindViewportBackgroundToSkin(plugin);
+        } else if (viewportBackground) {
+            const backgroundColor = decodeColor(viewportBackground);
             if (typeof backgroundColor === 'number') {
                 plugin.canvas3d?.setProps({ renderer: { backgroundColor } });
             }

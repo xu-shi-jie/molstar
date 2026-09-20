@@ -55,7 +55,12 @@ export const DefaultViewerOptions = {
     // secondary-zoom: zoom only, doesn't use primary mouse button
     // disabled: no automatic zoom or interaction on focus
     viewportFocusBehavior: 'default' as 'default' | 'secondary-zoom' | 'disabled',
-    viewportBackgroundColor: undefined as string | undefined,
+    /**
+     * A color for the 3D viewport, or `'theme'` to take it from the active
+     * skin so the viewport matches the UI drawn around it. `undefined` leaves
+     * the renderer's own default in place.
+     */
+    viewportBackgroundColor: 'theme' as string | 'theme' | undefined,
 
     pluginStateServer: PluginConfig.State.DefaultServer.defaultValue,
     volumeStreamingServer: PluginConfig.VolumeStreaming.DefaultServer.defaultValue,
