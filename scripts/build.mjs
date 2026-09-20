@@ -145,6 +145,9 @@ async function createBundle(app) {
         sourcemap: includeSourceMap,
         globalName: app.globalName || 'molstar',
         outfile,
+        // MOLSTAR_METAFILE=1 writes <outfile>.meta.json, which `esbuild
+        // --analyze` and the bundle report read to say where the weight is.
+        metafile: !!process.env.MOLSTAR_METAFILE,
         plugins: [
             fileLoaderPlugin({ out: prefix }),
             sassPlugin({
@@ -170,7 +173,8 @@ async function createBundle(app) {
         },
     });
 
-    await ctx.rebuild();
+    const result = await ctx.rebuild();
+    if (result.metafile) fs.writeFileSync(`${outfile}.meta.json`, JSON.stringify(result.metafile));
 
     if (!isProduction) await ctx.watch();
 }

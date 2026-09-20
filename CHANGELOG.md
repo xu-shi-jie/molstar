@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file, following t
 Note that since we don't clearly distinguish between a public and private interfaces there will be changes in non-major versions that are potentially breaking. If we make breaking changes to less used interfaces we will highlight it in here.
 
 ## [Unreleased]
+- Viewer app: drop the `mp4-export` extension. Its h264 encoder is 1000 kB of a 5100 kB bundle, a fifth of what a visitor downloads, and the feature is not offered by the pages this build serves. Restoring it is one import and one `ExtensionMap` entry
+- Build: `MOLSTAR_METAFILE=1` writes `<outfile>.meta.json` next to a bundle, for working out where its weight actually is
 - Viewer app: default `viewportBackgroundColor` to `'theme'`, taking the 3D viewport's background from the active skin so it matches the UI drawn around it, and following a skin change
 - Viewer app: build a single `molstar.css` carrying both the light and dark skins, dark scoped to `[data-molstar-theme="dark"]` or `[data-theme="dark"]`, so a page switches theme by setting an attribute rather than swapping stylesheets. The per-theme files under `build/viewer/theme/` are unchanged
 - Merge representation render-objects to reduce draw-calls

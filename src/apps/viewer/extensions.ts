@@ -16,7 +16,6 @@ import { G3DFormat } from '../../extensions/g3d/format';
 import { GeometryExport } from '../../extensions/geo-export';
 import { MAQualityAssessment, MAQualityAssessmentConfig } from '../../extensions/model-archive/quality-assessment/behavior';
 import { ModelExport } from '../../extensions/model-export';
-import { Mp4Export } from '../../extensions/mp4-export';
 import { loadMVS } from '../../extensions/mvs';
 import { MolViewSpec } from '../../extensions/mvs/behavior';
 import { loadMVSData } from '../../extensions/mvs/components/formats';
@@ -36,12 +35,15 @@ import { PluginViewModel } from '../../extensions/plugin/view-model';
 import { PluginUIViewModel } from '../../extensions/plugin/ui-view-model';
 
 export const ExtensionMap = {
+    // `mp4-export` is deliberately absent: its h264 encoder is 1000 kB of the
+    // 5100 kB bundle, a fifth of everything a visitor downloads, for a feature
+    // this fork's pages do not offer. Putting the entry and its import back is
+    // all that is needed to restore it.
     // Mol* built-in extensions
     'mvs': PluginSpec.Behavior(MolViewSpec),
     'backgrounds': PluginSpec.Behavior(Backgrounds),
     'debug-helpers': PluginSpec.Behavior(DebugHelpers),
     'model-export': PluginSpec.Behavior(ModelExport),
-    'mp4-export': PluginSpec.Behavior(Mp4Export),
     'geo-export': PluginSpec.Behavior(GeometryExport),
     'zenodo-import': PluginSpec.Behavior(ZenodoImport),
     'wwpdb-chemical-component-dictionary': PluginSpec.Behavior(wwPDBChemicalComponentDictionary),
